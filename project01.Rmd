@@ -1,0 +1,736 @@
+---
+title: "project"
+output: html_document
+date: "2023-11-18"
+author: Meysam Faraji Behnagh
+---
+
+## Question one
+
+### 1-1.
+
+```{r}
+#Part one
+mydata<- read.csv('C:/Users/Zahra/Downloads/chicken.csv')
+plot(x= mydata$pchick, y= mydata$consum,
+     main= " Demand of chicken vs price of chicken",
+     xlab= " Price",
+     ylab= " Demand ",
+ col="red")
+
+
+
+```
+
+When we plot the logarithmic points, it seems that data points come closer to each other. This can give us a more accurate model.
+
+```{r}
+plot(x= log(mydata$pchick), y= log(mydata$consum),
+     main= " Demand of chicken vs price of chicken",
+     xlab= " Price",
+     ylab= " Demand ",
+     col="Blue")
+```
+
+### 1-2.
+
+we get logarithm from both sides of the equation.
+
+![](images/clipboard-2556370629.png)
+
+### 1-3.
+
+#### a. The OLS estimates of parameters
+
+```{r}
+ols<- lm(log(mydata$consum)~ log(mydata$income)+ log(mydata$pchick)+  log(mydata$pbeef)+log(mydata$ppork),data= mydata) 
+
+summary(ols)
+```
+
+#### 
+
+#### b.
+
+Taking other variables unchanged, for one percent increase in the price of pork, The demand of chicken increases by 0.1478077.
+
+```{r}
+mod<- lm(log(consum) ~ log(income) + log(pchick) + 
+    log(pbeef) + log(ppork),data=mydata )
+newdata<- list(income=c(100,100), pchick=c(100,100), pbeef=c(100,100), ppork=c(100,101))
+
+pred<- exp(predict(mod,newdata=newdata))
+100*diff(log(pred))
+
+```
+
+### c.
+
+Taking other variables unchanged, for 3% increase in the price of the chicken, the demand for chicken increases by 1.539649.
+
+```{r}
+
+newdata<- list(income=c(1000,1000), pchick=c(100,97), pbeef=c(100,100), ppork=c(100,100))
+
+pred<- exp(predict(mod,newdata=newdata))
+100*diff(log(pred))
+```
+
+### 1-4
+
+```{r}
+newdata<- list(income=c(2400), pchick=c(52), pbeef=c(313), ppork=c(171.5))
+
+pred<- exp(predict(mod,newdata=newdata))
+pred
+```
+
+### 1.5
+
+### a.
+
+```{r}
+predicted_values<- predict(mod)
+correlation <- cor(predicted_values, log(mydata$consum))
+
+rsquared_1 <- correlation^2
+
+print(paste('Sample Correlation (R):', correlation))
+print(paste('Coefficient of Determination (R2):', rsquared_1))
+
+
+
+```
+
+### b.
+
+```{r}
+# Calculate the mean of the observed values
+mean_observed <- mean(log(mydata$consum))
+
+# Calculate TSS, RSS, and SSR
+TSS <- sum((log(mydata$consum) - mean_observed)^2)
+RSS <- sum((predicted_values - mean_observed)^2)
+SSR <- sum((log(mydata$consum) - predicted_values)^2)
+
+# Calculate R-squared
+rsquared_2 <- RSS / TSS
+
+# Print the results
+print(paste('Total Sum of Squares (TSS):', TSS))
+print(paste('Regression Sum of Squares (RSS):', RSS))
+print(paste('Sum of Squared Residuals (SSR):', SSR))
+print(paste('R2:', rsquared_2))
+# Let us compare both values.
+print(paste('Are both R2 the same value?', round(rsquared_1,6)==round(rsquared_2,6) ))
+
+
+```
+
+### 6.a.
+
+```{r}
+# calculate SSR
+residuals <- resid(mod)
+SSR <- sum(residuals^2)
+
+# Step 3: Calculate Degrees of Freedom (df)
+df <- length(residuals) - length(coef(mod))
+
+# Step 4: Calculate estimate of the variance of the residuals (sigma^2)
+residual_variance_estimate_manual <- SSR / df
+
+# Print the result
+print(paste('Estimate of the variance of the residuals (manual calculation):', residual_variance_estimate_manual))
+# Assuming 'mod3' is your linear regression model
+summary_mod <- summary(mod)
+
+# Extract the residual standard error (estimate of the variance of the residuals)
+residual_variance_estimate <- summary_mod$sigma^2
+
+# Print the result
+print(paste('Estimate of the variance of the residuals:', residual_variance_estimate))
+
+
+```
+
+### 6.b.
+
+```{r}
+# Calculat the covariance matrix:
+cov_matrix <- vcov(ols)
+cov_matrix
+
+```
+
+## 7.
+
+### a. For testing whether the βpork​ is significant we can writ H1 and H0.
+
+H0 : βpork​ = 0
+
+H1: βpork​ != 0
+
+If the t_statistic is to low or P-value is high enough, we can not reject null hypothesis. For a 5% significant level, the hypothesis can be tested.
+
+Since the P-value is more than %5, and t-statistic is smaller than critical t-statistic in %5 significant level. Therefore, the null hypothesis can not be rejected. It means that the price of the pork has not significant impact on the demand of the chicken.
+
+```{r}
+summary(ols)
+```
+
+### b.
+
+Similar to the effect of the price of the pork, the hypothesis test can be performed.
+
+H0 : βincome = 0
+
+H1 : βincome != 0
+
+In the above table, it can be seen that in 5% significance level, P-value is to low and the t-statistics of βincome is greater than the the critical t-statistic. Thus, the null hypothesis can be rejected. It means that income has meaningful impact on the demand of chicken.
+
+## 8.
+
+### a.
+
+Since the significance of two independent variables should be measured jointly, The F-test can be used for this purpose.
+
+H0: βpork = βbeef = 0
+
+H1 : βbeef != βbeef != 0
+
+As it can be seen in the below table, since F-statistic is less than critical F-statistic and p-value is greater than significance level, we can not reject null hypotheses; thus, it can be stated that at least one of variables are insignificant.
+
+```{r}
+library(car)
+library(carData)
+
+# Hypothesis test 
+test_result <- linearHypothesis(ols, c("log(mydata$pbeef) = 0", "log(mydata$ppork) = 0"))
+test_result
+
+```
+
+### b.
+
+Similar to the section a, F test can be performed to investigate the significance of income and pork price in our regression.
+
+H0: βpork = βincome = 0
+
+H1: βpork != βincome != 0
+
+In the below table, the F-statistic is greater than critical F; moreover, p-value is very small. It means that the null hypothesis can be rejected. In other words, at least one of the variables have significant impact on the demand of chicken.
+
+```{r}
+test_result1 <- linearHypothesis(ols, c("log(mydata$income) = 0", "log(mydata$ppork) = 0"))
+test_result1
+
+```
+
+### c.
+
+we use overall F test to investigate the significance of our model as a whole. Thus, we can perform a hypothesis test.
+
+H0: βpchick = βpork = βincome = βbeef = 0
+
+H1: βpchick != βpork != βincome != βbeef != 0
+
+After performing a F test, it can be observed that F statistic is very significant and the p-value is too small. It means that at least one of the variables have significant impact on the demand of the chicken.
+
+```{r}
+ lm(log(mydata$consum)~ log(mydata$income)+ log(mydata$pchick)+  log(mydata$pbeef)+log(mydata$ppork),data= mydata) 
+test_result2 <- linearHypothesis(ols, c("log(mydata$income) = 0", "log(mydata$ppork) = 0", "log(mydata$pbeef) = 0", "log(mydata$pchick) = 0"))
+test_result2
+
+```
+
+### 9
+
+The 99% confidence interval offers an approximation of the span in which the population parameter is expected to lie. It is articulated as "sample mean ± margin of error." The sample mean signifies the average value derived from a portion of the population, and the margin of error accommodates the fluctuation and uncertainty in the estimation. A broader confidence interval indicates increased uncertainty in our estimate, whereas a narrower interval implies greater confidence in the estimate.
+
+```{r}
+
+
+# Calculate mean and standard deviation of log(income)
+meanX1 <- mean(log(mydata$income))
+sdX1 <- sd(log(mydata$income))
+
+# Sample size
+n <- length(mydata$income)
+
+# Z-value for 99% confidence interval (two-tailed)
+z <- qnorm(0.995)
+
+# Calculate confidence interval bounds
+CIlowerbound <- meanX1 - z * (sdX1 / sqrt(n))
+CIupperbound <- meanX1 + z * (sdX1 / sqrt(n))
+
+# Display the results
+cat("Mean of log(income):", meanX1, "\n")
+cat("Standard Deviation of log(income):", sdX1, "\n")
+cat("99% Confidence Interval for the mean of log(income):", "[", CIlowerbound, ",", CIupperbound, "]\n")
+
+```
+
+### 10
+
+Performing two different regression model, with less variables than our main model, obviously, gives two models with different coefficients.
+
+Firstly, both o models are significant because the t-statistics for each intersection and variable in models are significant. However, in comparison, the first model is better than the second one, the adjusted R\^2, for the first model is approximately 94%, while for the second one is only 63%. It means that the fist model can be a better predictor.
+
+```{r}
+simple_model1 <- lm(log(mydata$consum) ~ log(mydata$income))
+simple_model2 <- lm(log(mydata$consum) ~ log(mydata$pchick))
+summary(simple_model1)
+summary(simple_model2)
+```
+
+## Question 2
+
+2.1
+
+```{r}
+#red the data
+w_data <- read.csv("C:/Users/Zahra/Desktop/R files/water.csv")
+
+str(w_data)
+```
+
+```{r}
+
+# build the regression model
+w_rating <- w_data$rating
+w_price <- w_data$price
+w_rq <- w_data$rq
+w_ju <- w_data$ju
+w_vo <- w_data$vo
+w_wo <- w_data$wa
+w_kr <- w_data$kr
+w_educa <- w_data$education
+w_gender <- w_data$gender
+w_income <- w_data$income
+w_age <- w_data$age
+model_2 <- lm(w_rating ~ w_price + w_rq + w_ju + w_vo + 
+                w_wo + w_kr + w_educa + w_gender + w_income + w_age, data = w_data)
+#display the model summary
+summary(model_2)
+```
+
+In regression analysis, the measure of the overall fit of the model is often assessed using the coefficient of determination \$R\^2\$ . In ordinary least squares (OLS) regression, r squared represents the proportion of the variance in the dependent variable that is explained by the independent variables in the model.
+
+-   In this cas, the overall R-squared test of 34.8% implies that 34.8% of the variance in the dependent variable is explained by the independent variables. It is quite a low R2.
+
+-   In this model, “price,” “rq,” “vo,” “wa,” “income,” and “age” are statistically significant - albeit with different alphas. Specifically, age and income only meet the threshold for alpha = .05 and .01 respectively.
+
+-   kr has a N/A coefficient due to singularities, which may indicate a potential issue with multicolinearity.
+
+-   The F-statistic tests the overall significance of the model. In this case, The p-value \< 2.2e-16 is very small, indicating at least one variable in the model is significantly related to the rating.
+
+### 2.2
+
+First, because of multicolinearity the kr variable should be omitted from the model, then we can do other tests with the model.
+
+```{r}
+model_2_without_kr <- lm(w_rating ~ w_price + w_rq + w_ju + w_vo + w_wo + w_educa + w_gender + w_income + w_age, data = w_data)
+summary(model_2_without_kr)
+```
+
+### 2.a
+
+The hypothesis test should be done:
+
+H0: Beta_age = Beta_gender = 0
+
+H1: Beta_age != Beta_gender != 0
+
+```{r}
+
+hyp_1 <- linearHypothesis(model_2_without_kr, c("w_gender = 0", "w_age = 0"))
+print(hyp_1)
+
+```
+
+In 1% significance, we can not reject null hypothesis, since p-value = 0.1243 is greater than our significance level. Therefore, we can take both of them out at the same tie from our regression model.
+
+### 2.b
+
+Similar to previous question, hypothesis test should be done:
+
+H0: Beta_rq = Beta_ju = 0
+
+H1: Beta_rq != Beta_ju != 0
+
+```{r}
+
+hyp_2 <- linearHypothesis(model_2_without_kr,c("w_rq = 0", "w_ju = 0"))
+print(hyp_2)
+```
+
+In 5% significant level, F-statistics is high enough and P-value is less than 5%, Thus we can reject null hypothesis, we can state that these two variables have not same effects on rating.
+
+### 2.c
+
+H0: The influence of the brands vo and wa on the expected rating is identical and income does not have any influence on the rating.
+
+H1: undefinedThe influence of the brands vo and wa on the expected rating is not identical or income does have some influence on the rating.
+
+```{r}
+hyp_3 <- linearHypothesis(model_2_without_kr, c("w_vo = w_wo","w_income = 0"))
+print(hyp_3)
+```
+
+Since p-value is small enough, we can reject null hypotheses. Therefore, we can state that the brands vo and wa do not have same effect on the rating; moreover, the income has influence on the rating.
+
+### 2.3
+
+Below, the summary of the model is represented. It can be seen that some of variables should be eliminated from the model because of two reasons. First, in %5 or even 10% significant level the t-statistics of brand ju, education, gender are smaller than critical t-value, so the existence of these variables is redundant. Second, we can omit the kr brand, since it causes multidisciplinary in our model.
+
+```{r}
+summary(model_2)
+```
+
+### 2.4
+
+```{r}
+# build a reduced model
+
+reduced_model <- lm(w_rating ~ w_price + w_rq + w_vo + 
+                w_wo + w_income + w_age, data = w_data)
+summary(reduced_model)
+```
+
+```{r}
+# standar errors of primary model
+first_model = coef(summary(model_2))[,"Std. Error"]
+
+print(first_model)
+
+```
+
+```{r}
+# standars errors of reduced model
+second_model= coef(summary(reduced_model))[,"Std. Error"]
+
+print(second_model)
+
+```
+
+We observe a decrease in the standard error for all coefficients in the reduced model, except for the price variable, which sees a marginal increase (0.008232456 compared to 0.008237675). Despite this slight change in price, the overall fit of the reduced model appears to be superior to that of the original model. This improvement can be attributed to several factors. Firstly, the reduced standard errors indicate increased precision, suggesting that the coefficients of the retained variables are more reliable with lower variability. Additionally, the simplification achieved by having fewer variables in the model makes it more straightforward to explain and manage.
+
+### 2.5
+
+```{r}
+# extract residuals
+residual <- residuals(reduced_model)
+summary(residual)
+```
+
+```{r}
+# Residual plot
+plot(residual ~ fitted(reduced_model), main = "Residual Plot", xlab = "Fitted Values", ylab = "Residuals", col = rgb(0, 0, 0, alpha = 0.2))
+abline(h = 0, col = "#cc5500", lty = 2)
+
+```
+
+The residuals appear to exhibit correlation, indicating a lack of randomness in their distribution. Additionally, the high variability in the data is not effectively captured by the linear model. Moreover, an observation can be made regarding the non-random distribution of the data, evident in a notable presence of outliers at the extremes of fitted values. In addition to observing the non-random distribution and correlation of residuals, for testing the correlation of residuals, the Breusch-Pagan test can be employed. The identified correlation in residuals suggests a departure from the assumption of homoscedasticity, where the variability of the residuals remains constant across all levels of the predictors. The Breusch-Pagan test assesses the presence of heteroscedasticity, providing statistical evidence to support or refute the notion of constant variance in the residuals. Therefore, incorporating this test into the analysis allows for a more comprehensive assessment of the model's adequacy and the potential need for adjustments.
+
+```{r}
+library(lmtest)
+# Breusch-Pagan test
+bptest(reduced_model)
+```
+
+With such a small p-value, we reject the null hypothesis and conclude that there is evidence of heteroscedasticity in the residuals. This implies that the assumption of constant variance in the errors of your regression model may not hold, and further investigation or adjustments to the model may be needed.
+
+### 2.6
+
+we dropped the insignificant variables from the model, which were eduction, gender, ju and kr. Lets predict the model with given information :
+
+```{r}
+
+newdata <- list(w_rq= 0, w_vo=0,w_wo= 0,w_income= 0, w_price= 40, w_age = 30)
+pred <- predict(reduced_model, newdata = newdata)
+print(pred)
+
+```
+
+It is expected that the rating for kr will be 8.75.
+
+### 6.a
+
+Since the gender is insignificant and we removed it from the model, the change in gender does not have effect on the rating. Therefore, the rating does not change.
+
+### 6.b
+
+```{r}
+newdata1 <- list(w_rq= 0, w_vo=0,w_wo= 0,w_income=1, w_price= 40, w_age = 30)
+pred <- predict(reduced_model, newdata = newdata1)
+print(pred)
+```
+
+The higher income decrees the predict value for kr.
+
+### 2.7
+
+```{r}
+summary(reduced_model)
+```
+
+-   A one-unit increase in price results in a negative impact on the rating, decreasing it by -0.302541 points.
+
+-   The brand 'rq' has a positive effect on the rating, contributing to an increase of 4.028169 points.
+
+-   The brand 'vo' positively influences the rating, leading to an increase of 3.701095 points.
+
+-   The brand 'wa' has a positive impact on the rating, causing a slight increase of 0.740219 points.
+
+-   Income has an adverse effect on the rating, with a one-unit increase influencing it negatively by -0.694788 points.
+
+-   Age contributes positively to the rating, with a one-unit increase resulting in a positive impact of 0.013631 points.
+
+## 3.
+
+### 3.1
+
+```{r}
+change_data <- read.csv("C:/Users/Zahra/Desktop/R files/change.csv")
+head(change_data)
+summary(change_data)
+```
+
+From summary, the inetresting thing is the maximum of age is 42. It may mean that employees in Austria tended to change their employees in younger ages.
+
+For graphical show, we can use different plots to compare the different categories in data :
+
+```{r}
+# Histogram for age
+library(ggplot2)
+plot_1 <- ggplot(change_data, aes(age , color = 'red'))+ geom_histogram() + labs( title = "Age Histogram", x ="Age", y= "number of employees")
+plot_1
+```
+
+For binary variables, we use bar plot to count them:
+
+```{r}
+# BAr plot for gender
+plot_2 <- ggplot(change_data, aes(gender))+ geom_bar( color= "green")+ labs(title ="Bar chart of gender",x = "number of men (0) VS number of women(1)")
+plot_2
+```
+
+```{r}
+# Histogram for periods_income
+plot_3 <- ggplot(change_data, aes(periods_income)) +
+  geom_histogram(color = "blue") +
+  labs(title = "Histogram of periods_income")
+
+plot_3
+
+```
+
+```{r}
+# Bar plot for accupation :
+plot_4 <- ggplot(change_data, aes(occupation))+ geom_bar( color= "blue")+ labs(title ="Bar chart of types occupation",x = "number of white collar(1) VS number of wblue collar(0)")
+plot_4
+
+```
+
+```{r}
+#Bar plot for changes in occupation:
+plot_5 <- ggplot(change_data, aes(x = nchange)) +
+  geom_bar(color = "blue") +
+  labs(title = "Bar chart of occupation change", x = "Frequency of the occupation change")
+
+plot_5
+```
+
+For median wage, we use box plot :
+
+```{r}
+plot_6 <- ggplot(change_data, aes(x=nchange, y=median_wage)) +
+  geom_boxplot(color = "blue") +
+  labs(title = "Boxt plot for median wage")
+plot_6
+
+```
+
+### 3.2
+
+```{r}
+model_31 <- lm(nchange ~ gender + occupation + age + periods_income + factor(median_wage), data = change_data)
+summary(model_31)
+```
+
+From summary, we can see that all independent variables have negative coefficient. The intercept is positive. All variables are meaningful in 1% level of significance. we can interpret the coefficient as follow:
+
+Intercept: if other variables are zero and, dummy variables are zero, supposing a blue collar men employee, we can conclude that nchange changes 2.83 times.
+
+Gender: since women is 1, by considering other variables unchanged, women change their jobs 0.241 times less than men.
+
+Occupation: supposing other variables unchanged, the white collar employees change their job 0.0211 less than the blue collar employees.
+
+age : -0.027 implies that young employees change their job less than older ones.
+
+periods_income: its coefficient is negative meaning that the longer the continoues payment, the less people are interest in changing their job at the rate of 0.031.
+
+median_wage: as a categorical data, its first and second category is almost insignificant, but category 3&4 is statistically significant and their coefficients are negative. It means that in comparison to our base category (first category) as the category increases, the change in job decreases.
+
+### 3.3
+
+```{r}
+model_32 <- lm(nchange ~ gender + occupation + age + periods_income + 
+    factor(median_wage) + I(periods_income^2), data = change_data)
+summary(model_32)
+```
+
+The p-value is very small enough for each variable to take them significant.
+
+The quadratic transformation of the periods_income is significant since the p/-value is smaller than 5%. it can be concluded that the relationship between nchang and continuous income is nonlinear. This means that while the increase in periods_income increases the change in job but the rate of change is decreasing.
+
+Adding quadratic transformation of the periods_income to the model, increased the adjusted R\^2 of the model from 0.062 to 0.178. This implies that quadratic transformation of periods_income can increase the 'fit' of the model. Other variables' coefficients is changed compare to our first model.
+
+however, in the new model, in contrast to previous one, the coefficient of the periods_income is positive and significant.
+
+### 3.4
+
+```{r}
+# Interaction between occupation and gender: 
+model_33 <- lm(nchange ~ gender*occupation + age + periods_income + 
+    factor(median_wage) + I(periods_income^2), data = change_data)
+summary(model_33) 
+```
+
+The p-value of the interaction variable is less than %5, so it is significant. The positive sign suggests that the association between gender and job changes is more pronounced among women in white-collar occupations compared to individuals in other occupation categories. In particular, women in white-collar jobs exhibit a higher rate of job changes compared to men.
+
+### 3.5
+
+```{r}
+# Defining a data frame based on the quastion's information
+my_data <- data.frame(gender = 1,
+  occupation = 1,   
+  age = 30,               
+  median_wage = 1,         
+  periods_income = 10,
+  income = 10)
+# Make a prediction
+my_predict <- predict(model_33, newdata= my_data)
+my_predict
+
+```
+
+with the given information, it is expected that a woman changes her job 1.8 times more.
+
+### 3.6
+
+Incorporating the quadratic term of periodic income reveals a non-linear relationship between nchange and periodic income. Additionally, introducing the interaction between occupation and gender enhances the explanatory power of the model. As a result, the adjusted R\^2 is highest for the third model.
+
+### 3.7
+
+```{r}
+# Residual diagnosis for model_31
+library("lmtest")
+residuals <- residuals(model_31)
+print(summary(residuals))
+```
+
+```{r}
+library('ggplot2')
+# Plot of residuals 
+residuals_vs_fitted <- data.frame(
+  Fitted_Values = fitted(model_31),
+  Residuals = residuals(model_31)
+)
+ggplot(residuals_vs_fitted, aes(x = Fitted_Values, y = Residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residual Plot", x = "Fitted Values", y = "Residuals")
+```
+
+It can be seen that the residuals are correlated.
+
+```{r}
+# QQ plot for normality
+qqnorm(residuals)
+qqnorm(residuals)
+```
+
+The plot is convex, suggesting a departure from the normal distribution. Therefore, we conduct a Breusch-Pagan test to check for heteroskedasticity in the residuals.
+
+```{r}
+# Breusch-Pagan test
+bptest(model_31)
+```
+
+With a p-value of 0.0002371, which is less than the common significance level of 0.05, you would reject the null hypothesis. This suggests that there is evidence to conclude that heteroscedasticity is present in the model_1 dataset. In other words, the variance of errors is not constant across all levels of the independent variables, indicating a violation of one of the assumptions of classical linear regression.
+
+```{r}
+# Residual diagnosis for model_32
+residual2 <- residuals(model_32)
+print(summary(residual2))
+```
+
+```{r}
+# Plot of residuals
+residuals_vs_fitted <- data.frame(
+  Fitted_Values = fitted(model_32),
+  Residuals = residuals(model_32)
+)
+ggplot(residuals_vs_fitted, aes(x = Fitted_Values, y = Residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residual Plot", x = "Fitted Values", y = "Residuals")
+```
+
+Similar to model_31, the residuals seem to be correlated.
+
+```{r}
+# QQ plot for normality
+qqnorm(residual2)
+qqnorm(residual2)
+```
+
+We observe that the residuals are not normally distributed, as evidenced by the convex shape of the (QQ) plot.
+
+```{r}
+# Breusch-Pagan test
+bptest(model_32)
+```
+
+The extremely small p-value (9.013e-12) suggests strong evidence against the null hypothesis. Therefore, you would reject the null hypothesis in favor of the alternative hypothesis. This implies that there is a significant presence of heteroscedasticity in the residuals of the model.
+
+```{r}
+# Residual diagnosis for model_33
+residual3 <- residuals(model_33)
+print(summary(residual3))
+
+```
+
+```{r}
+residuals_vs_fitted <- data.frame(
+  Fitted_Values = fitted(model_33),
+  Residuals = residuals(model_33)
+)
+ggplot(residuals_vs_fitted, aes(x = Fitted_Values, y = Residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residual Plot", x = "Fitted Values", y = "Residuals")
+```
+
+Again, the correlation between residual can be seen in the plot.
+
+```{r}
+# QQ plot for normality
+qqnorm(residual3)
+qqnorm(residual3)
+```
+
+Like previous model, the plot is convex.
+
+```{r}
+# Breusch-Pagan test
+bptest(model_33)
+
+```
+
+Again, the small p-value indicates the presence of heteroscedasticity.
+
+Overall, If the goal is to choose a model that satisfies the assumption of homoscedasticity (constant variance of residuals), none of the models meet this assumption based on the Breusch-Pagan tests. In practice, addressing heteroscedasticity might involve exploring alternative model specifications, transforming variables, or using robust standard errors.
